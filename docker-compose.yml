@@ -1,0 +1,159 @@
+
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq_cj_ecuador
+    ports:
+      - "5674:5672"
+      - "15674:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 3600000 -rabbit heartbeat 300"
+
+    networks:
+      - rabbitmq_net_ecuador
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 3000m   # Máx 512 MB RAM
+  
+  ssh_tunnel:
+    image: alpine:latest
+    container_name: ssh_tunnel_ecuador
+    volumes:
+      - ./stack/ssh_tunnel/bd-tunnel.sh:/bd-tunnel.sh:ro
+      - ./stack:/keys
+    command: sh /bd-tunnel.sh
+    env_file:
+      - ./stack/ssh_tunnel/.env
+    networks:
+      - rabbitmq_net_ecuador
+    restart: always
+    healthcheck:
+      test: ["CMD", "sh", "-c", "netstat -tn | grep -q ESTABLISHED"]
+      interval: 25s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 1000M
+        reservations:
+          memory: 256M
+  radicado_cj_ecuador:
+    build:
+      context: ./radicado_cj_ecuador
+      dockerfile: dockerfile
+    container_name: radicado_cj_ecuador
+    ports:
+      - "5060:5060"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - rabbitmq_net_ecuador
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5060/health"]
+      interval: 2m
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 1000m
+
+  scrapper_cj_ecuador:
+    build:
+      context: ./scrapper_cj_ecuador
+      dockerfile: dockerfile
+    #container_name: scrapper_cj_ecuador
+
+    depends_on:
+      radicado_cj_ecuador:
+        condition: service_healthy
+    networks:
+      - rabbitmq_net_ecuador
+    volumes:
+      - ./output:/app/output
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      replicas: 10
+      resources:
+        limits:
+          memory: 2000m
+  
+  scrapper_cj_ecuador_download:
+    build:
+      context: ./scrapper_cj_ecuador_download
+      dockerfile: dockerfile
+    #container_name: scrapper_cj_ecuador
+
+    depends_on:
+      radicado_cj_ecuador:
+        condition: service_healthy
+    networks:
+      - rabbitmq_net_ecuador
+    volumes:
+      - ./output:/app/output
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      replicas: 10
+      resources:
+        limits:
+          memory: 1000m
+  
+  upload_jsons:
+    build:
+      context: ./upload_jsons
+      dockerfile: dockerfile
+    networks:
+      - rabbitmq_net_ecuador
+    volumes:
+      - ./output:/app/output
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: 200m
+  
+
+networks:
+  rabbitmq_net_ecuador:
+    driver: bridge
+    
