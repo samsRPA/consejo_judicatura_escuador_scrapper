@@ -10,7 +10,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 3600000 -rabbit heartbeat 300"
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 7200000 -rabbit heartbeat 300"
 
     networks:
       - rabbitmq_net_ecuador
@@ -105,7 +105,7 @@ services:
         max-size: "20m"
         max-file: "5"
     deploy:
-      replicas: 10
+      replicas: 1
       resources:
         limits:
           memory: 2000m

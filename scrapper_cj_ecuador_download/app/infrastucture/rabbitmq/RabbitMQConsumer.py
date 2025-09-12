@@ -32,9 +32,9 @@ class RabbitMQConsumer(IRabbitMQConsumer):
                 port=self.port,
                 login=self.user,
                 password=self.password,
-                timeout=10,
-                heartbeat=300,      # ❤️ heartbeat cada 5 minutos
-                retry_interval=5,
+                heartbeat=300,       # ❤️ mismo que el servidor (5 minutos)
+                timeout=30,          # ⏳ subido para dar más margen al handshake
+                retry_interval=30    # 🔁 intenta reconectar cada 30s en caso de caída
             )
 
             self.channel = await self.connection.channel()
@@ -57,6 +57,8 @@ class RabbitMQConsumer(IRabbitMQConsumer):
                 raw_body = message.body.decode()
                 request = AutosRequestDto.fromRaw(raw_body)
 
+                
+                
                 # Crear servicio y correr scrapper
                 service: IDownloadService = self.download_service
                 await service.run_download(request)

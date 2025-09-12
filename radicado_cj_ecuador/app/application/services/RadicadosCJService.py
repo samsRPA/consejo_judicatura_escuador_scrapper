@@ -18,7 +18,11 @@ class RadicadosCJService(IRadicadosCJService):
     async def getAllRadicadosCJ(self):
         conn = await self.db.acquire_connection()
         try:
-            radicados = await self.repository.get_radicados_cj( conn)
+            #radicados = await self.repository.get_radicados_cj( conn)
+            radicados = [
+                "17203202400379",
+            ]
+            print(radicados)
             return radicados
         except Exception as error:
             logging.exception(f"Error al traer los radicados: {error}" )

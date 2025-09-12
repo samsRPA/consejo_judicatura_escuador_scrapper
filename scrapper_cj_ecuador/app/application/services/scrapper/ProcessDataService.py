@@ -19,13 +19,10 @@ class ProcessDataService(IProcessDataService,):
             if "fecha" in df.columns:
                 df["fecha_original"] = pd.to_datetime(df["fecha"], errors='coerce')
                 df["fecha"] = df["fecha_original"].dt.strftime("%d-%m-%Y")
-
-            # =============================
-            # Calcular consecutivo por fecha (1 = más reciente del día)
-            df = df.sort_values(["fecha_original"], ascending=[True])  # más reciente primero
-            #df["consecutivo"] = df.groupby(df["fecha_original"].dt.date).cumcount() + 1
-            # =============================
-
+                df["hora"] = df["fecha_original"].dt.strftime("%H:%M:%S")   # 👉 nueva columna con solo la hora
+                    # Crear campo FECHA_REGISTRO_TYBA = fecha-hora
+                df["FECHA_REGISTRO_TYBA"] = df["fecha"] + "-" + df["hora"]
+    
             # Columnas extra
             df = df.assign(
             
@@ -46,10 +43,13 @@ class ProcessDataService(IProcessDataService,):
                 incidente=df.get("incident",0),
                 uuid= df.get("uuid")
             )
+                        
+            # ❌ Eliminar la columna auxiliar
+            df = df.drop(columns=["fecha_original"])
 
             # 👉 Retornar todo
             actuaciones_completo = df.to_dict(orient="records")
-
+           
             # 👉 Retornar simplificado
             actuaciones_guardar = df[[
                 "radicado",
@@ -58,6 +58,7 @@ class ProcessDataService(IProcessDataService,):
                 "actuacion_rama",
                 "anotacion_rama",
                 "origen_datos",
+                "FECHA_REGISTRO_TYBA",
             # "consecutivo"
             ]].to_dict(orient="records")
 

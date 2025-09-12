@@ -12,6 +12,6 @@ class IGetDataService(ABC):
         pass
 
     @abstractmethod
-    def get_anexos(self,fecha, uuid_actuacion, ieTablaReferencia, codigo, idMovimientoJuicioIncidente, tipo, radicado):
+    def get_anexos(actuacion_procesada):
         pass
 

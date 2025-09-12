@@ -166,6 +166,7 @@ class GetDataService(IGetDataService):
             response = session.post(url, json=payload, timeout=(3, 10))
             response.raise_for_status()
             data = response.json()
+           
             
             if not isinstance(data, list) or len(data) == 0:
                 logging.warning("⚠️ Respuesta vacía o no es lista")
@@ -197,7 +198,23 @@ class GetDataService(IGetDataService):
             return []
 
 
-    def get_anexos(self,fecha, uuid_actuacion, ieTablaReferencia, codigo, idMovimientoJuicioIncidente, tipo, radicado):
+    def get_anexos(self,actuacion_procesada):
+
+        
+        fecha= actuacion_procesada["fecha"]
+        uuid_actuacion=actuacion_procesada["uuid"] 
+        ieTablaReferencia=actuacion_procesada["ieTablaReferencia"]
+        codigo=actuacion_procesada["codigo"]
+        idMovimientoJuicioIncidente=actuacion_procesada["idMovimientoJuicioIncidente"]
+        tipo=actuacion_procesada["tipo"]
+        radicado=actuacion_procesada["radicado"]
+        hora=actuacion_procesada["hora"]
+        cod_despacho_rama=actuacion_procesada["cod_despacho_rama"]
+        actuacion_rama=actuacion_procesada["actuacion_rama"]
+        anotacion_rama=actuacion_procesada["anotacion_rama"]
+        origen_datos=actuacion_procesada["origen_datos"]
+        fecha_registro_tyba=actuacion_procesada["FECHA_REGISTRO_TYBA"]
+        
         
         url = "https://api.funcionjudicial.gob.ec/EXPEL-CONSULTA-CAUSAS-CLEX-SERVICE/api/consulta-causas-clex/datos/anexos"
 
@@ -245,27 +262,39 @@ class GetDataService(IGetDataService):
 
             # Renombrar a minúscula
             df = df.rename(columns={"UUID": "uuid"})
-            # Agregar fecha y radicado
-            df["fecha"] = fecha  
-            df["radicado"] = radicado
-
-            # Filtrar: solo anexos con UUID no vacío ni nulo
+            
+                        
+            # Filtrar anexos con UUID válido
             df = df[df["uuid"].notna() & (df["uuid"].str.strip() != "")]
 
             if df.empty:
                 logging.info(f"ℹ️ Todos los anexos para la actuación con uuid: {uuid_actuacion} y radicado {radicado} tenían UUID vacío")
                 return []
 
+            # ✅ Solo quedarme con la columna uuid
+            df = df[["uuid"]]
+
+            # ✅ Agregar todas las variables fijas de la actuación original
+            df["fecha"] = fecha
+            df["radicado"] = radicado
+            df["hora"] = hora
+            df["cod_despacho_rama"] = cod_despacho_rama
+            df["actuacion_rama"] = actuacion_rama
+            df["anotacion_rama"] = anotacion_rama
+            df["origen_datos"] = origen_datos
+            df["fecha_registro_tyba"] = fecha_registro_tyba
+
+                        
+
             logging.info(f"✅ Se encontraron {len(df)} anexos válidos para la actuación con uuid: {uuid_actuacion}, del radicado {radicado}")
 
-            # Convertir a lista de dicts
-            anexos = df[["uuid", "fecha", "radicado"]].to_dict(orient="records")
+            # Convertir a lista de dicts con TODOS los campos
+            anexos = df.to_dict(orient="records")
             return anexos
 
         except requests.RequestException as e:
-            logging.error(f"❌ Error en la solicitud: {e}")
+            logging.error(f"❌ Error en la solicitud de anexos: {e}")
             return []
-
         except requests.exceptions.Timeout:
             logging.error("⏳ La solicitud excedió el tiempo de espera")
             return []

@@ -42,6 +42,13 @@ class DownloadService(IDownloadService):
         fecha_valor = fila.fecha
         radicado_valor = fila.radicado
         consecutivo_valor = fila.consecutivo
+        #hora_valor= fila.hora
+        cod_despacho_rama_valor=fila.cod_despacho_rama
+        actuacion_rama_valor= fila.actuacion_rama
+        anotacion_rama_valor=fila.anotacion_rama
+        origen_datos_valor= fila.origen_datos
+        fecha_registro_tyba_valor= fila.fecha_registro_tyba
+    
 
         
         
@@ -71,12 +78,21 @@ class DownloadService(IDownloadService):
             existe = await self.repository.documento_existe(conn, fecha_valor, radicado_valor, consecutivo_valor)
             if existe:
                 logging.info(f"📂 [{uuid}] Documento ya existe en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}). No se insertará.")
+                logging.info(f"📂 [{uuid}] Documento actualizado en {fecha_registro_tyba_valor} en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}).")
+                await self.repository.actualizar_hora(conn,fecha_valor,consecutivo_valor,radicado_valor,fecha_registro_tyba_valor) 
+
+                logging.info(f"📂 [{uuid}] Documento insertado en actuacion rama en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}). ")
+
+                await self.repository.insertar_actuacion_rama( conn,radicado_valor, cod_despacho_rama_valor, fecha_valor, actuacion_rama_valor, anotacion_rama_valor, origen_datos_valor,fecha_registro_tyba_valor)
+
+                
+              
                 return None
 
             # Insertar en BD
             insertado = await self.repository.insertar_documento_simple(
                 conn, fecha_valor, radicado_valor, consecutivo_valor, 
-                ruta_S3, url, "CJ_ECUADOR", "pdf"
+                ruta_S3, url, "CJ_ECUADOR", "pdf", fecha_registro_tyba_valor
             )
 
             if insertado:
@@ -116,11 +132,17 @@ class DownloadService(IDownloadService):
         try:
             paths = HoyPathsDto.build().model_dump()
             # Construir el DTO que espera run_multi
-            auto= AutosRequestDto(
+            auto = AutosRequestDto(
                 uuid=body.uuid,
                 fecha=body.fecha,
                 radicado=body.radicado,
-                consecutivo=body.consecutivo
+                consecutivo=body.consecutivo,
+                hora=body.hora,
+                cod_despacho_rama=body.cod_despacho_rama,
+                actuacion_rama=body.actuacion_rama,
+                anotacion_rama=body.anotacion_rama,
+                origen_datos=body.origen_datos,
+                fecha_registro_tyba=body.fecha_registro_tyba
             )
             
             await self.download_documents(auto,paths["actuaciones_dir"])

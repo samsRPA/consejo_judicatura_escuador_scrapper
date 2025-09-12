@@ -8,6 +8,13 @@ class AutosRequestDto(BaseModel):
     fecha:str
     radicado:str
     consecutivo:int
+    hora:str 
+    cod_despacho_rama:str
+    actuacion_rama:str 
+    anotacion_rama:str 
+    origen_datos: str
+    fecha_registro_tyba: str
+    
     
 
     @classmethod

@@ -23,8 +23,9 @@ class RabbitMQProducer(IRabbitMQProducer):
                 port=self.port,
                 login=self.user,
                 password=self.password,
-                heartbeat=30,  # manda heartbeats cada 30s
-                timeout=30
+                heartbeat=300,       # ❤️ mismo que el servidor (5 minutos)
+                timeout=30,          # ⏳ subido para dar más margen al handshake
+                retry_interval=30    # 🔁 intenta reconectar cada 30s en caso de caída
             )
             self.channel = await self.connection.channel()
             await self.channel.declare_queue(self.pub_queue_name, durable=True)
