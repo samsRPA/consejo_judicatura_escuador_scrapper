@@ -51,12 +51,11 @@ class ScrapperService(IScrapperService):
                     "uuid":uuid_actual,
                     "fecha": actuacion_procesada["fecha"],
                     "radicado": actuacion_procesada["radicado"],
-                    "hora": actuacion_procesada["hora"],
                     "cod_despacho_rama":actuacion_procesada["cod_despacho_rama"],
                     "actuacion_rama":actuacion_procesada["actuacion_rama"],
                     "anotacion_rama":actuacion_procesada["anotacion_rama"],
                     "origen_datos":actuacion_procesada["origen_datos"],
-                    "fecha_registro_tyba":actuacion_procesada["FECHA_REGISTRO_TYBA"]
+                    "fecha_registro_tyba":actuacion_procesada["fecha_registro_tyba"]
                     }
                 list_uuid_fecha.append(actuacion_descargar)
                 anexo = self.getData.get_anexos(actuacion_procesada)

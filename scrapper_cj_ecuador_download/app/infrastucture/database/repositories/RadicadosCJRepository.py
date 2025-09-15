@@ -38,24 +38,24 @@ class RadicadosCJRepository:
     async def insertar_actuacion_rama(self, conn,radicado_rama, cod_despacho_rama, fecha_actuacion, actuacion_rama, anotacion_rama, origen_datos,fecha_registro_tyba):
         try:
             query = """
-                INSERT INTO ACTUACIONES_RAMA (
-                    RADICADO_RAMA,
-                    COD_DESPACHO_RAMA,
-                    FECHA_ACTUACION,
-                    ACTUACION_RAMA,
-                    ANOTACION_RAMA,
-                    ORIGEN_DATOS,
-                    FECHA_REGISTRO_TYBA
-                ) VALUES (
-                    :radicado_rama,
-                    :cod_despacho_rama,
-                    TO_DATE(:fecha_actuacion, 'DD-MM-YYYY'),
-                    :actuacion_rama,
-                    :anotacion_rama,
-                    :origen_datos,
-                    TO_DATE(:fecha_registro_tyba, 'DD-MM-YYYY-HH24:MI:SS')
-                )
-            """
+            INSERT INTO ACTUACIONES_RAMA (
+                RADICADO_RAMA,
+                COD_DESPACHO_RAMA,
+                FECHA_ACTUACION,
+                ACTUACION_RAMA,
+                ANOTACION_RAMA,
+                ORIGEN_DATOS,
+                FECHA_REGISTRO_TYBA
+            ) VALUES (
+                :radicado_rama,
+                :cod_despacho_rama,
+                TO_DATE(:fecha_actuacion, 'DD-MM-YYYY'),
+                :actuacion_rama,
+                :anotacion_rama,
+                :origen_datos,
+                TO_DATE(:fecha_registro_tyba, 'DD/MM/YYYY HH24:MI:SS')
+
+        """
 
             def _execute():
                 with conn.cursor() as cursor:
@@ -73,9 +73,10 @@ class RadicadosCJRepository:
             await asyncio.to_thread(conn.commit)
 
             print("✅ Insert en ACTUACIONES_RAMA realizado correctamente")
-
+            return True
         except Exception as e:
             print(f"❌ Error en insert: {e}")
+            return False
                 
 
     async def insertar_documento_simple(
@@ -105,7 +106,7 @@ class RadicadosCJRepository:
                     :url_auto,
                     :origen,
                     :tipo_documento,
-                    TO_DATE(:fecha_auto, 'DD-MM-YYYY-HH24:MI:SS')
+                    TO_DATE(:fecha_auto, 'DD/MM/YYYY HH24:MI:SS')
                 )
             """
 

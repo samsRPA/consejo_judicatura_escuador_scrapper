@@ -22,7 +22,7 @@ class RadicadosCJService(IRadicadosCJService):
             radicados = [
                 "17203202400379",
             ]
-            print(radicados)
+
             return radicados
         except Exception as error:
             logging.exception(f"Error al traer los radicados: {error}" )

@@ -21,7 +21,7 @@ class ProcessDataService(IProcessDataService,):
                 df["fecha"] = df["fecha_original"].dt.strftime("%d-%m-%Y")
                 df["hora"] = df["fecha_original"].dt.strftime("%H:%M:%S")   # 👉 nueva columna con solo la hora
                     # Crear campo FECHA_REGISTRO_TYBA = fecha-hora
-                df["FECHA_REGISTRO_TYBA"] = df["fecha"] + "-" + df["hora"]
+                df["fecha_registro_tyba"] = df["fecha"] + " " + df["hora"]
     
             # Columnas extra
             df = df.assign(
@@ -46,6 +46,7 @@ class ProcessDataService(IProcessDataService,):
                         
             # ❌ Eliminar la columna auxiliar
             df = df.drop(columns=["fecha_original"])
+            df= df.drop(columns=["hora"])
 
             # 👉 Retornar todo
             actuaciones_completo = df.to_dict(orient="records")
@@ -58,7 +59,7 @@ class ProcessDataService(IProcessDataService,):
                 "actuacion_rama",
                 "anotacion_rama",
                 "origen_datos",
-                "FECHA_REGISTRO_TYBA",
+                "fecha_registro_tyba",
             # "consecutivo"
             ]].to_dict(orient="records")
 

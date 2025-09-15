@@ -66,26 +66,14 @@ class DownloadService(IDownloadService):
         url = f"https://api.funcionjudicial.gob.ec/CJ-DOCUMENTO-SERVICE/api/document/query/hba?code={uuid}"
 
         try:
-            resp = requests.get(url, timeout=30)
-            resp.raise_for_status()
-
-            content_type = resp.headers.get("Content-Type", "").lower()
-            if "pdf" not in content_type:
-                logging.warning(f"⚠️ [{uuid}] No es un PDF válido o la actuación no tiene documentos. Content-Type: {content_type}")
-                return None
+           
             
             # Verificar si ya existe en BD
             existe = await self.repository.documento_existe(conn, fecha_valor, radicado_valor, consecutivo_valor)
             if existe:
                 logging.info(f"📂 [{uuid}] Documento ya existe en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}). No se insertará.")
-                logging.info(f"📂 [{uuid}] Documento actualizado en {fecha_registro_tyba_valor} en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}).")
-                await self.repository.actualizar_hora(conn,fecha_valor,consecutivo_valor,radicado_valor,fecha_registro_tyba_valor) 
-
-                logging.info(f"📂 [{uuid}] Documento insertado en actuacion rama en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}). ")
-
-                await self.repository.insertar_actuacion_rama( conn,radicado_valor, cod_despacho_rama_valor, fecha_valor, actuacion_rama_valor, anotacion_rama_valor, origen_datos_valor,fecha_registro_tyba_valor)
-
-                
+               
+             
               
                 return None
 
@@ -96,11 +84,22 @@ class DownloadService(IDownloadService):
             )
 
             if insertado:
+                resp = requests.get(url, timeout=30)
+                resp.raise_for_status()
+
+                
                 with open(ruta_pdf, "wb") as f:
                     f.write(resp.content)
-                self.upload_file_s3(ruta_pdf)
+                    
+                insertado_s3= self.upload_file_s3(ruta_pdf)
 
-                logging.info(f"✅ [{uuid}] PDF descargado, guardado en {ruta_pdf} y registrado en la BD.")
+                if insertado_s3:
+
+                    logging.info(f"✅ [{uuid}] PDF descargado, guardado en {ruta_pdf} y registrado en la BD.")
+                    #logging.info(f"📂 [{uuid}] Documento insertado en actuacion rama en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}). ")
+                    #await self.repository.insertar_actuacion_rama( conn,radicado_valor, cod_despacho_rama_valor, fecha_valor, actuacion_rama_valor, anotacion_rama_valor, origen_datos_valor,fecha_registro_tyba_valor)
+
+                
                 return ruta_pdf
             else:
                 logging.error(f"❌ [{uuid}] No se logró insertar el documento en la BD (radicado={radicado_valor}).")
@@ -119,13 +118,16 @@ class DownloadService(IDownloadService):
         if subido_s3:
             logging.info(f"✅ archivo  {ruta_pdf} subido a S3")
             try:
-                time.sleep(10)
+                time.sleep(5)
                 os.remove(ruta_pdf)
                 logging.info(f"🗑️ Archivo local eliminado: {ruta_pdf}")
+                return True
             except Exception as e:
                 logging.error(f"⚠️ No se pudo eliminar el archivo local {ruta_pdf}: {e}")
+                return False
         else:
             logging.warning(f"⚠️ Error al subir {ruta_pdf} a S3, se mantiene local.") 
+            return False
 
     async def run_download(self,body: AutosRequestDto):
         
@@ -137,7 +139,6 @@ class DownloadService(IDownloadService):
                 fecha=body.fecha,
                 radicado=body.radicado,
                 consecutivo=body.consecutivo,
-                hora=body.hora,
                 cod_despacho_rama=body.cod_despacho_rama,
                 actuacion_rama=body.actuacion_rama,
                 anotacion_rama=body.anotacion_rama,

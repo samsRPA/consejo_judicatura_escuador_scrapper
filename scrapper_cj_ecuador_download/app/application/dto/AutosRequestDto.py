@@ -8,7 +8,6 @@ class AutosRequestDto(BaseModel):
     fecha:str
     radicado:str
     consecutivo:int
-    hora:str 
     cod_despacho_rama:str
     actuacion_rama:str 
     anotacion_rama:str 

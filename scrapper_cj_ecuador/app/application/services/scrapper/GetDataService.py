@@ -208,12 +208,12 @@ class GetDataService(IGetDataService):
         idMovimientoJuicioIncidente=actuacion_procesada["idMovimientoJuicioIncidente"]
         tipo=actuacion_procesada["tipo"]
         radicado=actuacion_procesada["radicado"]
-        hora=actuacion_procesada["hora"]
+
         cod_despacho_rama=actuacion_procesada["cod_despacho_rama"]
         actuacion_rama=actuacion_procesada["actuacion_rama"]
         anotacion_rama=actuacion_procesada["anotacion_rama"]
         origen_datos=actuacion_procesada["origen_datos"]
-        fecha_registro_tyba=actuacion_procesada["FECHA_REGISTRO_TYBA"]
+        fecha_registro_tyba=actuacion_procesada["fecha_registro_tyba"]
         
         
         url = "https://api.funcionjudicial.gob.ec/EXPEL-CONSULTA-CAUSAS-CLEX-SERVICE/api/consulta-causas-clex/datos/anexos"
@@ -277,7 +277,6 @@ class GetDataService(IGetDataService):
             # ✅ Agregar todas las variables fijas de la actuación original
             df["fecha"] = fecha
             df["radicado"] = radicado
-            df["hora"] = hora
             df["cod_despacho_rama"] = cod_despacho_rama
             df["actuacion_rama"] = actuacion_rama
             df["anotacion_rama"] = anotacion_rama
