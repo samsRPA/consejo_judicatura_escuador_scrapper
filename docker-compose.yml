@@ -22,6 +22,8 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    volumes:
+    - ./output/logs:/var/log/rabbit
     logging:
       driver: "json-file"
       options:
@@ -38,6 +40,7 @@ services:
     volumes:
       - ./stack/ssh_tunnel/bd-tunnel.sh:/bd-tunnel.sh:ro
       - ./stack:/keys
+      - ./output/logs:/var/log/ssh
     command: sh /bd-tunnel.sh
     env_file:
       - ./stack/ssh_tunnel/.env
@@ -239,8 +242,8 @@ services:
     volumes:
       - ./promtail-config.yml:/etc/promtail/promtail-config.yml:ro
       - ./output/logs:/var/log/containers:ro
-      - ./root/:root_user:ro
-      - /home/:/home_server_ro
+      #- ./root/:root_user:ro
+      #- /home/:/home_server_ro
       - promtail-data:/tmp
     command:
       - -config.file=/etc/promtail/promtail-config.yml
