@@ -7,7 +7,9 @@ from app.api.views import getApiRouter
 from app.dependencies.Dependencies import Dependencies
 
 from app.infrastucture.config.Settings import load_config
-
+from fastapi.responses import  Response
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from prometheus_fastapi_instrumentator import Instrumentator
 # ============ Configuración de logging ============
 logging.basicConfig(
     level=logging.INFO,
@@ -65,8 +67,9 @@ app = FastAPI(
     redoc_url="/api/v1/redocs",
 )
 
-
+Instrumentator().instrument(app).expose(app)
 app.include_router(getApiRouter())
+
 
 @app.get("/")
 def default():
@@ -75,3 +78,10 @@ def default():
 @app.get("/health")
 async def healthcheck():
     return {"status": "ok"}
+
+@app.get("/metrics")
+async def metrics():
+    """
+    Endpoint de Prometheus para scrapear métricas
+    """
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

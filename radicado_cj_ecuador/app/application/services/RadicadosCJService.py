@@ -4,10 +4,14 @@ from app.domain.interfaces.IRabbitMQProducer import IRabbitMQProducer
 from app.domain.interfaces.IRadicadosCJService import IRadicadosCJService
 #from app.infrastucture.database.repositories.KeyTybaRepository import KeyTybaRepository
 import logging
-
+import time
 from app.infrastucture.database.repositories.RadicadosCJRepository import RadicadosCJRepository
 from app.application.dto.RadicadoResponseDto import RadicadoResponseDto
-
+from app.application.dto.MetricsDto import (
+    radicados_service_requests_total,
+    radicados_service_errors_total,
+    radicados_service_response_time
+)
 class RadicadosCJService(IRadicadosCJService):
     logger= logging.getLogger(__name__)
     def __init__(self, producer: IRabbitMQProducer, db: IDataBase, repository: RadicadosCJRepository):
@@ -16,18 +20,20 @@ class RadicadosCJService(IRadicadosCJService):
         self.repository = repository
 
     async def getAllRadicadosCJ(self):
+        radicados_service_requests_total.inc()
+        start_time = time.time()
         conn = await self.db.acquire_connection()
         try:
-            #radicados = await self.repository.get_radicados_cj( conn)
-            radicados = [
-                "17985201900326",
-            ]
-
+            radicados = await self.repository.get_radicados_cj(conn)
             return radicados
         except Exception as error:
-            self.logger.exception(f"Error al traer los radicados: {error}" )
+            radicados_service_errors_total.inc()
+            self.logger.exception(f"Error al traer los radicados: {error}")
+            raise  # Para propagar el error si quieres que el controlador lo capture
         finally:
-            await  self.db.release_connection(conn)
+            await self.db.release_connection(conn)
+            elapsed_time = time.time() - start_time
+            radicados_service_response_time.observe(elapsed_time)
 
 
     async def publishRadicadosCJ(self):

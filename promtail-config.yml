@@ -1,0 +1,46 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+
+  - job_name: csvfiles
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<fecha>\d{2}-\d{2}-\d{4}),(?P<detalle>.*)$'
+      - labels:
+          detalle:
+      - timestamp:
+          source: fecha
+          format: "02-01-2006"
+          location: Local
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: csvfiles
+          __path__: /var/log/containers/*.csv
+  # Comandos usuarios
+  - job_name: history
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: history
+          __path__: /home_server/*/.bash_history
+
+  # Comandos Root
+  - job_name: history_root
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: history
+          __path__: /root_user/.bash_history
+

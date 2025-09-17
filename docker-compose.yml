@@ -1,6 +1,9 @@
 
 
+
 services:
+ 
+
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: rabbitmq_cj_ecuador
@@ -11,11 +14,10 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 7200000 -rabbit heartbeat 300"
-
     networks:
       - rabbitmq_net_ecuador
     healthcheck:
-      test: [ "CMD", "rabbitmqctl", "status" ]
+      test: ["CMD", "rabbitmqctl", "status"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -28,7 +30,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 3000m   # Máx 512 MB RAM
+          memory: 3000m
   
   ssh_tunnel:
     image: alpine:latest
@@ -64,14 +66,14 @@ services:
       dockerfile: dockerfile
     container_name: radicado_cj_ecuador
     ports:
-      - "5060:5060"
+      - "5000:5000"
     depends_on:
       rabbitmq:
         condition: service_healthy
     networks:
       - rabbitmq_net_ecuador
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5060/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/metrics"]
       interval: 2m
       timeout: 10s
       retries: 3
@@ -152,6 +154,111 @@ services:
         limits:
           memory: 200m
   
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    networks:
+      - rabbitmq_net_ecuador
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    
+    networks:
+      - rabbitmq_net_ecuador
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=1y"
+      - "--web.enable-lifecycle"
+    restart: unless-stopped
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    networks:
+      - rabbitmq_net_ecuador
+    pid: host
+    command:
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|run)($|/)'
+    volumes:
+      - /:/host:ro
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    networks:
+      - rabbitmq_net_ecuador
+    expose:
+      - "8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    restart: unless-stopped
+  
+    
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    networks:
+      - rabbitmq_net_ecuador
+    volumes:
+      - ./loki-config.yml:/mnt/config/loki-config.yml
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+    command: 
+      - -config.file=/mnt/config/loki-config.yml
+    
+  promtail:
+    image: grafana/promtail:2.9.3  # O usa `latest` si prefieres
+    container_name: promtail
+    restart: unless-stopped
+    networks:
+      - rabbitmq_net_ecuador
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - ./output/logs:/var/log/containers:ro
+      - ./root/:root_user:ro
+      - /home/:/home_server_ro
+      - promtail-data:/tmp
+    command:
+      - -config.file=/etc/promtail/promtail-config.yml
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          memory: 500m
+  
+volumes:
+  grafana-data:
+  prometheus-data:
+  loki-data:
+  promtail-data:
 
 networks:
   rabbitmq_net_ecuador:
