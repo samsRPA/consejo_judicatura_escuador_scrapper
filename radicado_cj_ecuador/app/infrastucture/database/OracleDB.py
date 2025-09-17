@@ -4,6 +4,9 @@ import asyncio
 from app.domain.interfaces.IDataBase import IDataBase
 
 class OracleDB(IDataBase):
+    
+    logger= logging.getLogger(__name__)
+    
     def __init__(self, db_user: str, db_password: str, db_host: str, db_port: int, db_service_name: str):
         self._db_user = db_user
         self._password = db_password
@@ -29,8 +32,9 @@ class OracleDB(IDataBase):
                 max=5,
                 increment=1
             )
-            logging.info("✅ Pool de Oracle creado exitosamente.")
+            self.logger.info("✅ Pool de Oracle creado exitosamente.")
         except Exception as error:
+            self.logger.error(f"❌ Error : {error}")
             raise error
 
     async def acquire_connection(self):
@@ -53,4 +57,4 @@ class OracleDB(IDataBase):
         if self._pool:
             await asyncio.to_thread(self._pool.close)
             self._pool = None
-            logging.info("🔌 Conexión a Oracle cerrada correctamente.")
+            self.logger.info("🔌 Conexión a Oracle cerrada correctamente.")

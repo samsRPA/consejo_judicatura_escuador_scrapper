@@ -2,6 +2,9 @@ import asyncio
 import logging
 
 class RadicadosCJRepository:
+
+    logger = logging.getLogger(__name__)
+    
     def __init__(self, table_car):
         self.table_car = table_car
 
@@ -32,7 +35,7 @@ class RadicadosCJRepository:
             return result is not None
 
         except Exception as error:
-            logging.error(f"❌ Error en documento_existe: {error}")
+            self.logger.error(f"❌ Error en documento_existe: {error}")
             raise
 
     async def insertar_actuacion_rama(self, conn,radicado_rama, cod_despacho_rama, fecha_actuacion, actuacion_rama, anotacion_rama, origen_datos,fecha_registro_tyba):
@@ -54,6 +57,8 @@ class RadicadosCJRepository:
                 :anotacion_rama,
                 :origen_datos,
                 TO_DATE(:fecha_registro_tyba, 'DD/MM/YYYY HH24:MI:SS')
+                
+            )
 
         """
 
@@ -107,7 +112,10 @@ class RadicadosCJRepository:
                     :origen,
                     :tipo_documento,
                     TO_DATE(:fecha_auto, 'DD/MM/YYYY HH24:MI:SS')
+                    
                 )
+            
+                
             """
 
             def _execute():
@@ -129,7 +137,7 @@ class RadicadosCJRepository:
             return True
 
         except Exception as error:
-            logging.error(f"❌ Error en insertar_documento_simple: {error}")
+            self.logger.error(f"❌ Error en insertar_documento_simple: {error}")
             return False
 
 
@@ -169,5 +177,5 @@ class RadicadosCJRepository:
             return True
 
         except Exception as error:
-            logging.error(f"❌ Error en actualizar_resuelve: {error}")
+            self.logger.error(f"❌ Error en actualizar_resuelve: {error}")
             return False

@@ -9,6 +9,8 @@ import json
 from pathlib import Path
 class ScrapperService(IScrapperService):
 
+    logger= logging.getLogger(__name__)
+    
     def __init__(self, getData: IGetDataService, processData: IProcessDataService,publish_actuaciones:IActuacionesPublishService, body: ScrapperRequest):
         self.getData = getData
         self.processData = processData
@@ -20,6 +22,12 @@ class ScrapperService(IScrapperService):
         try:
             paths = HoyPathsDto.build().model_dump()
             movimientos = self.getData.get_incidente_judicatura(radicado,paths["json_dir"])
+            if not movimientos:
+            # La lista está vacía, no hay movimientos
+                self.logger.warning(" ⚠️No hay movimientos")
+            else:
+            # Hay uno o más movimientos en la lista
+                self.logger.info(f"Hay {len(movimientos)} movimientos")
 
             actuaciones_globales = []
             for movimiento in movimientos:
@@ -33,9 +41,22 @@ class ScrapperService(IScrapperService):
                 )
                 actuaciones_globales.extend(actuaciones)
 
+            if not actuaciones_globales:
+        # La lista está vacía, no hay actuaciones globales
+                self.logger.warning("⚠️ No hay actuaciones globales")
+            else:
+                # Hay una o más actuaciones globales
+                self.logger.info(f"Hay {len(actuaciones_globales)} actuaciones globales")
+
             
             actuaciones_procesadas = self.processData.procesar_actuaciones_judiciales(actuaciones_globales, paths["json_dir"])
-          
+
+            if not actuaciones_procesadas:
+            
+                self.logger.warning("⚠️ No hay actuaciones procesadas")
+            else:
+                
+                self.logger.info(f"Hay {len(actuaciones_procesadas)} actuaciones procesadas")
             list_uuid_fecha=[]
             for actuacion_procesada in actuaciones_procesadas:
                 uuid_actual = actuacion_procesada["uuid"]
@@ -44,7 +65,7 @@ class ScrapperService(IScrapperService):
 
                 # ✅ Validación de UUID vacío
                 if not uuid_actual:
-                    logging.warning(f"⚠️ Actuación en fecha {actuacion_procesada.get('fecha')} llegó SIN uuid, se ignora.")
+                    self.logger.warning(f"⚠️ Actuación en fecha {actuacion_procesada.get('fecha')} llegó SIN uuid, se ignora.")
                     continue  # no lo procesamos
 
                 actuacion_descargar={
@@ -62,7 +83,7 @@ class ScrapperService(IScrapperService):
                 if anexo:
                     list_uuid_fecha.extend(anexo)
 
-            print(list_uuid_fecha)
+           
                     
             uuid_con_documentos= self.processData.procesar_uuid_con_documentos(list_uuid_fecha)
             actuaciones_consecutivo= self.processData.procesar_consecutivos(uuid_con_documentos)
@@ -70,6 +91,7 @@ class ScrapperService(IScrapperService):
             
             await self.publish_actuaciones.publish_actuaciones_download(actuaciones_consecutivo)
         except Exception as e:
+            self.logger.error(f"❌ Error : {e}")
             raise e
  
 
@@ -84,5 +106,6 @@ class ScrapperService(IScrapperService):
             await self.scrapper(radicado.radicado)
 
         except Exception as e:
+            self.logger.error(f"❌ Error : {e}")
             raise e
        

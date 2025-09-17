@@ -11,6 +11,7 @@ from datetime import datetime
 import logging
 
 class BulkUploadService(IBulkUploadService):
+    logger = logging.getLogger(__name__)
 
     def __init__( self, db: IDataBase, repository:CargaMasivaCJRepository):
         self.db= db
@@ -52,13 +53,13 @@ class BulkUploadService(IBulkUploadService):
                     # Insertar usando el repositorio
                     insertado = self.repository.insert_masivo(conn, tipo, json_content)
                     if insertado:
-                        logging.info(f"✅ insert masivo ")
+                        self.logger.info(f"✅ insert masivo ")
                     else:
-                        logging.error("❌ no se inserto:")
+                        self.logger.error("❌ no se inserto:")
             return resultados
 
         except Exception as e:
-            logging.error(f"❌ Error inesperado: {e}")
+            self.logger.error(f"❌ Error inesperado: {e}")
         
         
     

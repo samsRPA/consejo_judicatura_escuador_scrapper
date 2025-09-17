@@ -21,14 +21,14 @@ def setup_logger(log_path: Path):
         log_path.parent.mkdir(parents=True, exist_ok=True)
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
+            format='%(asctime)s - %(levelname)s - [%(module)s] %(message)s',
             handlers=[
                 logging.FileHandler(log_path, encoding="utf-8"),
                 logging.StreamHandler(sys.stdout),
             ],
         )
 
-
+logger = logging.getLogger(__name__)
 async def main():
     
     paths = HoyPathsDto.build().model_dump()
@@ -45,10 +45,10 @@ async def main():
         
         
     except Exception as e:
-        logging.exception("❌ Error durante la ejecución principal", exc_info=e)
+        logger.exception("❌ Error durante la ejecución principal", exc_info=e)
   
 if __name__ == '__main__':
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logging.exception("Interrupción manual del programa.")
+        logger.exception("Interrupción manual del programa.")

@@ -9,7 +9,7 @@ from app.infrastucture.database.repositories.RadicadosCJRepository import Radica
 from app.application.dto.RadicadoResponseDto import RadicadoResponseDto
 
 class RadicadosCJService(IRadicadosCJService):
-#repository: KeyTybaRepository
+    logger= logging.getLogger(__name__)
     def __init__(self, producer: IRabbitMQProducer, db: IDataBase, repository: RadicadosCJRepository):
         self.producer = producer
         self.db = db
@@ -20,12 +20,12 @@ class RadicadosCJService(IRadicadosCJService):
         try:
             #radicados = await self.repository.get_radicados_cj( conn)
             radicados = [
-                "17203202400379",
+                "17985201900326",
             ]
 
             return radicados
         except Exception as error:
-            logging.exception(f"Error al traer los radicados: {error}" )
+            self.logger.exception(f"Error al traer los radicados: {error}" )
         finally:
             await  self.db.release_connection(conn)
 
@@ -42,5 +42,5 @@ class RadicadosCJService(IRadicadosCJService):
                 
                 await self.producer.publishMessage(radicados_dto)
             except Exception as error:
-                logging.exception(f"Error al publicar el radicado: {radicado}")
+                self.logger.exception(f"Error al publicar el radicado: {radicado}")
                 raise error 

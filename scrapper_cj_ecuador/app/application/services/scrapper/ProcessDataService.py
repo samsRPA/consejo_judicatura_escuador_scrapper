@@ -7,6 +7,9 @@ import pandas as pd
 from app.domain.interfaces.IProcessDataService import IProcessDataService
 
 class ProcessDataService(IProcessDataService,):
+    
+    logger= logging.getLogger(__name__)
+    
     def __init__(self):
         pass
     
@@ -91,14 +94,14 @@ class ProcessDataService(IProcessDataService,):
                     existing_data.extend(new_unique_data)
                     with open(output_file, "w", encoding="utf-8") as f:
                         json.dump(existing_data, f, ensure_ascii=False, indent=4)
-                    logging.info(f"✅ {len(new_unique_data)} actuaciones nuevas guardadas en {output_file}")
+                    self.logger.info(f"✅ {len(new_unique_data)} actuaciones nuevas guardadas en {output_file}")
                 else:
-                    logging.info("⚠️ No se guardaron actuaciones, todas ya existían.")
+                    self.logger.warning("⚠️ No se guardaron actuaciones, todas ya existían.")
 
             return actuaciones_completo
 
         except Exception as e:
-            logging.error(f"❌ Error inesperado: {e}")
+            self.logger.error(f"❌ Error inesperado: {e}")
             return []
 
 
@@ -112,7 +115,7 @@ class ProcessDataService(IProcessDataService,):
         for fila in lista:
             uuid = fila.get("uuid")
             if not uuid:
-                logging.warning("⚠️ Fila sin UUID, se omite")
+                self.logger.warning("⚠️ Fila sin UUID, se omite")
                 continue
 
             url = f"https://api.funcionjudicial.gob.ec/CJ-DOCUMENTO-SERVICE/api/document/query/hba?code={uuid}"
@@ -122,13 +125,13 @@ class ProcessDataService(IProcessDataService,):
 
                 content_type = resp.headers.get("Content-Type", "").lower()
                 if "pdf" in content_type:
-                    logging.warning(f"✅  [{uuid}] Cuenta con documento valido.  Content-Type: {content_type}")
+                    self.logger.info(f"✅  [{uuid}] Cuenta con documento valido.  Content-Type: {content_type}")
                     nueva_lista.append(fila)  # ✅ solo los válidos
                 else:
-                    logging.warning(f"⚠️ [{uuid}] No es un PDF válido o la actuación no tiene documentos. Content-Type: {content_type}")
+                    self.logger.warning(f"⚠️ [{uuid}] No es un PDF válido o la actuación no tiene documentos. Content-Type: {content_type}")
 
             except requests.RequestException as e:
-                logging.error(f"❌ Error al validar UUID {uuid}: {e}")
+                self.logger.error(f"❌ Error al validar UUID {uuid}: {e}")
 
         return nueva_lista
         

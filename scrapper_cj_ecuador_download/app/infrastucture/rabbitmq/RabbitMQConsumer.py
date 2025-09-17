@@ -11,6 +11,8 @@ from app.domain.interfaces.IDownloadService import IDownloadService
 
 class RabbitMQConsumer(IRabbitMQConsumer):
 
+    logger = logging.getLogger(__name__)
+    
     def __init__(self, host: str, port: int, pub_queue_name: str, prefetch_count: int,
                  download_service: Callable[[str], IDownloadService], user, password):
         self.host = host
@@ -45,10 +47,10 @@ class RabbitMQConsumer(IRabbitMQConsumer):
                 durable=True
             )
 
-            logging.info("✅ Conectado a RabbitMQ - Consumer")
+            self.logger.info("✅ Conectado a RabbitMQ - Consumer")
 
         except Exception as error:
-            logging.error(f"❌ Error conectando al consumer: {error}")
+            self.logger.error(f"❌ Error conectando al consumer: {error}")
             raise error
 
     async def callback(self, message: aio_pika.IncomingMessage):
@@ -64,40 +66,40 @@ class RabbitMQConsumer(IRabbitMQConsumer):
                 await service.run_download(request)
 
         except aio_pika.exceptions.ChannelInvalidStateError:
-            logging.error("❌ Canal inválido al procesar mensaje. Reencolando...")
+            self.logger.error("❌ Canal inválido al procesar mensaje. Reencolando...")
             try:
                 await message.nack(requeue=True)
             except Exception:
-                logging.warning("⚠️ No se pudo hacer NACK, canal ya cerrado.")
+                self.logger.warning("⚠️ No se pudo hacer NACK, canal ya cerrado.")
         except Exception as e:
-            logging.error(f"❌ Error procesando mensaje: {e}")
+            self.logger.error(f"❌ Error procesando mensaje: {e}")
             try:
                 await message.nack(requeue=False)
             except aio_pika.exceptions.MessageProcessError:
-                logging.warning("⚠️ Intento de NACK en un mensaje ya procesado.")
+                self.logger.warning("⚠️ Intento de NACK en un mensaje ya procesado.")
 
     async def startConsuming(self):
         while True:
             try:
                 if not self.connection or self.connection.is_closed:
-                    logging.info("📡 Conexión no establecida o cerrada. Conectando...")
+                    self.logger.info("📡 Conexión no establecida o cerrada. Conectando...")
                     await self.connect()
 
                 if self.queue:
                     await self.queue.consume(self.callback, no_ack=False)
-                    logging.info("🎧 Esperando mensajes...")
+                    self.logger.info("🎧 Esperando mensajes...")
 
                 while not self.connection.is_closed:
                     await asyncio.sleep(5)
 
             except asyncio.CancelledError:
-                logging.info("👋 Interrupción manual detectada.")
+                self.logger.info("👋 Interrupción manual detectada.")
                 break
             except Exception as e:
-                logging.error(f"⚠️ Error en loop de consumo: {e}. Reintentando en 5s...")
+                self.logger.error(f"⚠️ Error en loop de consumo: {e}. Reintentando en 5s...")
                 await asyncio.sleep(5)
 
         # cierre limpio
         if self.connection:
             await self.connection.close()
-            logging.info("🔌 Conexión a RabbitMQ cerrada.")
+            self.logger.info("🔌 Conexión a RabbitMQ cerrada.")

@@ -5,6 +5,7 @@ from app.domain.interfaces.IActuacionesPublishService import IActuacionesPublish
 
 
 class ActuacionesPublishService(IActuacionesPublishService):
+    logger= logging.getLogger(__name__)
     def __init__(self,producer: IRabbitMQProducer ):
         self.producer=producer
     
@@ -17,5 +18,5 @@ class ActuacionesPublishService(IActuacionesPublishService):
             try:
                 await self.producer.publishMessage(actuacion)
             except Exception as error:
-                logging.exception(f"Error al publicar el actuacion: {actuacion}")
+                self.logger.exception(f"Error al publicar el actuacion: {actuacion}")
                 raise error 

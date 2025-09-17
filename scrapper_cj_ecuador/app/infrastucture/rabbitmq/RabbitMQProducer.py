@@ -6,7 +6,8 @@ from app.domain.interfaces.IRabbitMQProducer import IRabbitMQProducer
 
 
 class RabbitMQProducer(IRabbitMQProducer):
-
+    logger = logging.getLogger(__name__)
+    
     def __init__(self, host, port, pub_queue_name, user, password):
         self.host = host
         self.port = port
@@ -15,7 +16,7 @@ class RabbitMQProducer(IRabbitMQProducer):
         self.password = password
         self.connection = None
         self.channel = None
-
+  
     async def connect(self) -> None:
         try:
             self.connection = await aio_pika.connect_robust(
@@ -29,10 +30,10 @@ class RabbitMQProducer(IRabbitMQProducer):
             )
             self.channel = await self.connection.channel()
             await self.channel.declare_queue(self.pub_queue_name, durable=True)
-            logging.info("✅ Conectado a RabbitMQ - Producer")
+            self.logger.info("✅ Conectado a RabbitMQ - Producer")
 
         except Exception as error:
-            logging.error(f"❌ Error conectando al Producer: {error}")
+            self.logger.error(f"❌ Error conectando al Producer: {error}")
             raise error
 
     async def publishMessage(self, message):
@@ -45,12 +46,12 @@ class RabbitMQProducer(IRabbitMQProducer):
                 ),
                 routing_key=self.pub_queue_name,
             )
-            logging.info(f"📤 Mensaje enviado a {self.pub_queue_name}")
+            self.logger.info(f"📤 Mensaje enviado a {self.pub_queue_name}")
         except Exception as error:
-            logging.exception("❌ Error enviando mensaje")
+            self.logger.error(f"❌ Error enviando mensaje {error}")
             raise error
 
     async def close(self) -> None:
         if self.connection:
             await self.connection.close()
-            logging.info("🔌 Conexión con RabbitMQ cerrada")
+            self.logger.info("🔌 Conexión con RabbitMQ cerrada")

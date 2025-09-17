@@ -19,6 +19,9 @@ from app.application.dto.HoyPathsDto import HoyPathsDto
 
 class DownloadService(IDownloadService):
 
+
+    logger = logging.getLogger(__name__)
+    
     def __init__(self, db: IDataBase, repository:RadicadosCJRepository, S3_manager:IS3Manager, ):
         self.db = db
         self.repository = repository
@@ -60,7 +63,7 @@ class DownloadService(IDownloadService):
 
         # Evitar descargas duplicadas en disco
         if os.path.exists(ruta_pdf):
-            logging.info(f"⏩ PDF ya existe en disco: {ruta_pdf}")
+            self.logger.warning(f"⏩ PDF ya existe en disco: {ruta_pdf}")
             return ruta_pdf
 
         url = f"https://api.funcionjudicial.gob.ec/CJ-DOCUMENTO-SERVICE/api/document/query/hba?code={uuid}"
@@ -71,7 +74,7 @@ class DownloadService(IDownloadService):
             # Verificar si ya existe en BD
             existe = await self.repository.documento_existe(conn, fecha_valor, radicado_valor, consecutivo_valor)
             if existe:
-                logging.info(f"📂 [{uuid}] Documento ya existe en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}). No se insertará.")
+                self.logger.info(f"📂 [{uuid}] Documento ya existe en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}). No se insertará.")
                
              
               
@@ -95,38 +98,38 @@ class DownloadService(IDownloadService):
 
                 if insertado_s3:
 
-                    logging.info(f"✅ [{uuid}] PDF descargado, guardado en {ruta_pdf} y registrado en la BD.")
-                    #logging.info(f"📂 [{uuid}] Documento insertado en actuacion rama en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}). ")
+                    self.logger.info(f"✅ [{uuid}] PDF descargado, guardado en {ruta_pdf} y registrado en la BD.")
+                    #self.logger.info(f"📂 [{uuid}] Documento insertado en actuacion rama en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}). ")
                     #await self.repository.insertar_actuacion_rama( conn,radicado_valor, cod_despacho_rama_valor, fecha_valor, actuacion_rama_valor, anotacion_rama_valor, origen_datos_valor,fecha_registro_tyba_valor)
 
                 
                 return ruta_pdf
             else:
-                logging.error(f"❌ [{uuid}] No se logró insertar el documento en la BD (radicado={radicado_valor}).")
+                self.logger.error(f"❌ [{uuid}] No se logró insertar el documento en la BD (radicado={radicado_valor}).")
                 return None
 
         except requests.exceptions.RequestException as e:
-            logging.error(f"❌ [{uuid}] Error de red o timeout al descargar: {str(e)}")
+            self.logger.error(f"❌ [{uuid}] Error de red o timeout al descargar: {str(e)}")
             return None
         except Exception as e:
-            logging.exception(f"❌ [{uuid}] Error inesperado procesando el documento: {str(e)}")
+            self.logger.exception(f"❌ [{uuid}] Error inesperado procesando el documento: {str(e)}")
             return None
        
 
     def upload_file_s3(self,ruta_pdf):
         subido_s3= self.S3_manager.uploadFile(ruta_pdf)
         if subido_s3:
-            logging.info(f"✅ archivo  {ruta_pdf} subido a S3")
+            self.logger.info(f"✅ archivo  {ruta_pdf} subido a S3")
             try:
                 time.sleep(5)
                 os.remove(ruta_pdf)
-                logging.info(f"🗑️ Archivo local eliminado: {ruta_pdf}")
+                self.logger.info(f"🗑️ Archivo local eliminado: {ruta_pdf}")
                 return True
             except Exception as e:
-                logging.error(f"⚠️ No se pudo eliminar el archivo local {ruta_pdf}: {e}")
+                self.logger.error(f"⚠️ No se pudo eliminar el archivo local {ruta_pdf}: {e}")
                 return False
         else:
-            logging.warning(f"⚠️ Error al subir {ruta_pdf} a S3, se mantiene local.") 
+            self.logger.warning(f"⚠️ Error al subir {ruta_pdf} a S3, se mantiene local.") 
             return False
 
     async def run_download(self,body: AutosRequestDto):
@@ -149,6 +152,7 @@ class DownloadService(IDownloadService):
             await self.download_documents(auto,paths["actuaciones_dir"])
 
         except Exception as e:
+            self.logger.exception(f"❌  error {e}")
             raise e
        
 

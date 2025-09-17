@@ -11,21 +11,22 @@ from app.infrastucture.config.Settings import load_config
 # ============ Configuración de logging ============
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(levelname)s - [%(module)s] %(message)s',
 )
 
-
+logger= logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     config = load_config()
+
     dependency = Dependencies()
     dependency.settings.override(config)
     app.container = dependency
     db = dependency.data_base()
     producer = dependency.rabbitmq_producer()
-
+    
 
     try:
         await producer.connect()
@@ -35,17 +36,17 @@ async def lifespan(app: FastAPI):
 
      
     except Exception as error:
-        logging.exception("❌ Error durante la ejecución principal", exc_info=error)
+        logger.exception("❌ Error durante la ejecución principal", exc_info=error)
     finally:
         try:
             await producer.close()
         except Exception as e:
-            logging.warning(f"⚠️ No se pudo cerrar RabbitMQ correctamente: {e}")
+            logger.warning(f"⚠️ No se pudo cerrar RabbitMQ correctamente: {e}")
         try:
             if db.is_connected:
                 await db.close_connection()
         except Exception as error:
-            logging.warning(f"⚠️ No se pudo cerrar la DB correctamente: {error}")
+            logger.warning(f"⚠️ No se pudo cerrar la DB correctamente: {error}")
 
 
 app = FastAPI(

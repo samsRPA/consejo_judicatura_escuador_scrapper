@@ -21,7 +21,7 @@ class ColombiaFormatter(logging.Formatter):
 
 
 def setup_logger(log_path: Path):
-    logger = logging.getLogger()
+    logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
 
     if logger.hasHandlers():
@@ -33,7 +33,7 @@ def setup_logger(log_path: Path):
     stream_handler = logging.StreamHandler()
 
     formatter = ColombiaFormatter(
-        '%(asctime)s - %(levelname)s - %(message)s',
+        '%(asctime)s - %(levelname)s - [%(module)s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'  # formato clásico con hora Colombia
     )
 
@@ -46,7 +46,7 @@ def setup_logger(log_path: Path):
 
 # start_logger modificado para test
 async def start_logger():
-    logger = logging.getLogger()
+    logger = logging.getLogger(__name__)
     # Simulamos que la fecha "anterior" es ayer para forzar el cambio
     fecha_actual = (datetime.now(ZoneInfo("America/Bogota")) - timedelta(days=1)).date()
 
@@ -55,9 +55,9 @@ async def start_logger():
         nueva_fecha = datetime.now(ZoneInfo("America/Bogota")).date()
 
         if nueva_fecha != fecha_actual:
-            logging.info("📅 Cambio de día detectado. Reiniciando archivo de log.")
+            logger.info("📅 Cambio de día detectado. Reiniciando archivo de log.")
             paths = HoyPathsDto.build().model_dump()
             setup_logger(paths["logs_file"])  # Log inicial
-            logging.info("Nuevo archivo de log configurado.")
+            logger.info("Nuevo archivo de log configurado.")
             fecha_actual = nueva_fecha
             break  # salimos en la prueba

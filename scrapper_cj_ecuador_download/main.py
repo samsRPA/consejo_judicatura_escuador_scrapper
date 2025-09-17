@@ -21,19 +21,19 @@ def setup_logger(log_path: Path):
         log_path.parent.mkdir(parents=True, exist_ok=True)
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s',
+            format='%(asctime)s - %(levelname)s - [%(module)s] %(message)s',
             handlers=[
                 logging.FileHandler(log_path, encoding="utf-8"),
                 logging.StreamHandler(sys.stdout),
             ],
         )
 
-
+logger = logging.getLogger(__name__)
 async def main():
     
     paths = HoyPathsDto.build().model_dump()
     setup_logger(paths["logs_file"])
-
+    
     config = load_config()
     dependency = Dependencies()
     dependency.settings.override(config)
@@ -49,16 +49,16 @@ async def main():
             start_logger()
         )
     except Exception as e:
-        logging.exception("❌ Error durante la ejecución principal", exc_info=e)
+        logger.exception("❌ Error durante la ejecución principal", exc_info=e)
     finally:
         try:
             if db.is_connected:
                 await db.close_connection()
         except Exception as error:
-            logging.warning(f"⚠️ No se pudo cerrar la DB correctamente: {error}")
+            logger.exception(f"⚠️ No se pudo cerrar la DB correctamente: {error}")
   
 if __name__ == '__main__':
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logging.exception("Interrupción manual del programa.")
+       logger.exception("Interrupción manual del programa.")
