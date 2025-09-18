@@ -110,7 +110,7 @@ services:
         max-size: "20m"
         max-file: "5"
     deploy:
-      replicas: 10
+      replicas: 1
       resources:
         limits:
           memory: 2000m
@@ -134,7 +134,7 @@ services:
         max-size: "20m"
         max-file: "5"
     deploy:
-      replicas: 15
+      replicas: 20
       resources:
         limits:
           memory: 1000m

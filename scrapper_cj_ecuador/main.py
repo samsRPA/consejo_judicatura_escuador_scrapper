@@ -40,22 +40,30 @@ async def main():
     dependency = Dependencies()
     dependency.settings.override(config)
     consumer = dependency.rabbitmq_consumer()
-
+    db = dependency.data_base()
     producer = dependency.rabbitmq_producer()
+
 
 
     
         
 
     try:
+        await db.connect()
         await producer.connect()
         await asyncio.gather(
             consumer.startConsuming(),
             start_logger()
         )
+
     except Exception as e:
         logger.exception("❌ Error durante la ejecución principal", exc_info=e)
     finally:
+        try:
+            if db.is_connected:
+                await db.close_connection()
+        except Exception as error:
+            logger.exception(f"⚠️ No se pudo cerrar la DB correctamente: {error}")
         try:
             await producer.close()
         except Exception as e:

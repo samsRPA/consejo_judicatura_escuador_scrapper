@@ -5,13 +5,17 @@ from app.domain.interfaces.IProcessDataService import IProcessDataService
 import logging
 from app.application.dto.HoyPathsDto import HoyPathsDto
 from app.domain.interfaces.IActuacionesPublishService import IActuacionesPublishService
-import json
-from pathlib import Path
+
+from app.domain.interfaces.IDataBase import IDataBase
+from app.infrastucture.database.repositories.RadicadoProcesadoCJRepository import RadicadoProcesadoCJRepository
+
 class ScrapperService(IScrapperService):
 
     logger= logging.getLogger(__name__)
-    
-    def __init__(self, getData: IGetDataService, processData: IProcessDataService,publish_actuaciones:IActuacionesPublishService, body: ScrapperRequest):
+  
+    def __init__(self,db: IDataBase,repository:RadicadoProcesadoCJRepository, getData: IGetDataService, processData: IProcessDataService,publish_actuaciones:IActuacionesPublishService,body: ScrapperRequest):
+        self.db=db
+        self.repository=repository
         self.getData = getData
         self.processData = processData
         self.publish_actuaciones= publish_actuaciones
@@ -20,16 +24,24 @@ class ScrapperService(IScrapperService):
 
     async def scrapper(self,radicado):
         try:
+            conn = await self.db.acquire_connection()
+            
             paths = HoyPathsDto.build().model_dump()
+            
+            is_radicado_procesado= await self.repository.radicacion_procesada(conn,radicado)
+            
             movimientos = self.getData.get_incidente_judicatura(radicado,paths["json_dir"])
+            
             if not movimientos:
             # La lista está vacía, no hay movimientos
-                self.logger.warning(" ⚠️No hay movimientos")
+                self.logger.warning(f" ⚠️ el radicado {radicado} no tiene movimientos")
+                return
             else:
             # Hay uno o más movimientos en la lista
-                self.logger.info(f"Hay {len(movimientos)} movimientos")
+                self.logger.info(f"Hay {len(movimientos)} movimientos para el radicado {radicado}")
 
             actuaciones_globales = []
+            
             for movimiento in movimientos:
                 actuaciones = self.getData.get_actuaciones_judiciales(
                     movimiento["idMovimientoJuicioIncidente"],
@@ -41,22 +53,23 @@ class ScrapperService(IScrapperService):
                 )
                 actuaciones_globales.extend(actuaciones)
 
-            if not actuaciones_globales:
-        # La lista está vacía, no hay actuaciones globales
-                self.logger.warning("⚠️ No hay actuaciones globales")
-            else:
-                # Hay una o más actuaciones globales
-                self.logger.info(f"Hay {len(actuaciones_globales)} actuaciones globales")
+       
+              
+            self.logger.info(f"Hay {len(actuaciones_globales)} actuaciones globales para el radicado {radicado}")
 
-            
-            actuaciones_procesadas = self.processData.procesar_actuaciones_judiciales(actuaciones_globales, paths["json_dir"])
+            actuaciones_filtradas= self.processData.filtrar_actuaciones_procesadas(actuaciones_globales,is_radicado_procesado)
+            if not actuaciones_filtradas:
+                self.logger.info(f" 🕳️ No hay actuaciones en los últimos días para el radicado  {radicado}")
+                return
+      
+            actuaciones_procesadas = self.processData.procesar_actuaciones_judiciales( actuaciones_filtradas, paths["json_dir"])
 
             if not actuaciones_procesadas:
-            
-                self.logger.warning("⚠️ No hay actuaciones procesadas")
+                self.logger.warning(f" No hay actuaciones procesadas para el radicado {radicado}")
+                return
             else:
+                self.logger.info(f"Hay {len(actuaciones_procesadas)} actuaciones procesadas para el radicado {radicado}")
                 
-                self.logger.info(f"Hay {len(actuaciones_procesadas)} actuaciones procesadas")
             list_uuid_fecha=[]
             for actuacion_procesada in actuaciones_procesadas:
                 uuid_actual = actuacion_procesada["uuid"]
@@ -65,7 +78,7 @@ class ScrapperService(IScrapperService):
 
                 # ✅ Validación de UUID vacío
                 if not uuid_actual:
-                    self.logger.warning(f"⚠️ Actuación en fecha {actuacion_procesada.get('fecha')} llegó SIN uuid, se ignora.")
+                    self.logger.warning(f"⚠️ Actuación en fecha {actuacion_procesada.get('fecha')} llegó SIN uuid, se ignora para el radicado {radicado}.")
                     continue  # no lo procesamos
 
                 actuacion_descargar={

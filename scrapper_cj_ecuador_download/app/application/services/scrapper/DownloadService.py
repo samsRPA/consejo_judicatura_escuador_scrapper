@@ -46,10 +46,10 @@ class DownloadService(IDownloadService):
         radicado_valor = fila.radicado
         consecutivo_valor = fila.consecutivo
         #hora_valor= fila.hora
-        cod_despacho_rama_valor=fila.cod_despacho_rama
-        actuacion_rama_valor= fila.actuacion_rama
-        anotacion_rama_valor=fila.anotacion_rama
-        origen_datos_valor= fila.origen_datos
+        # cod_despacho_rama_valor=fila.cod_despacho_rama
+        # actuacion_rama_valor= fila.actuacion_rama
+        # anotacion_rama_valor=fila.anotacion_rama
+        # origen_datos_valor= fila.origen_datos
         fecha_registro_tyba_valor= fila.fecha_registro_tyba
     
 

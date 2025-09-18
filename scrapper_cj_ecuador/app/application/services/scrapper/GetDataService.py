@@ -32,7 +32,8 @@ class GetDataService(IGetDataService):
             data = response.json()
 
             if not isinstance(data, list) or len(data) == 0:
-                return {"success": False, "error": "No se encontró información en la respuesta"}
+                self.logger.warning(f"⚠️  el radicado  {radicado} no devolvio resultados")
+                return []
 
             # ---------------- Normalizamos actores ----------------
             actores = pd.json_normalize(

@@ -25,6 +25,9 @@ class RadicadosCJService(IRadicadosCJService):
         conn = await self.db.acquire_connection()
         try:
             radicados = await self.repository.get_radicados_cj(conn)
+            # radicados = [
+            #     "17985201900326"
+            #     ]
             return radicados
         except Exception as error:
             radicados_service_errors_total.inc()

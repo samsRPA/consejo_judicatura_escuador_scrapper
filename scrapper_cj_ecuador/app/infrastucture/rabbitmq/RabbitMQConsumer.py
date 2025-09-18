@@ -9,9 +9,8 @@ from app.domain.interfaces.IScrapperService import IScrapperService
 
 
 class RabbitMQConsumer(IRabbitMQConsumer):
-    
     logger = logging.getLogger(__name__)
-    
+
     def __init__(self, host: str, port: int, pub_queue_name: str, prefetch_count: int,
                  scrapper_service: Callable[[str], IScrapperService], user, password):
         self.host = host
@@ -25,7 +24,7 @@ class RabbitMQConsumer(IRabbitMQConsumer):
         self.connection: aio_pika.RobustConnection | None = None
         self.channel: aio_pika.abc.AbstractChannel | None = None
         self.queue: aio_pika.abc.AbstractQueue | None = None
-   
+
     async def connect(self) -> None:
         try:
             self.connection = await aio_pika.connect_robust(
@@ -33,9 +32,9 @@ class RabbitMQConsumer(IRabbitMQConsumer):
                 port=self.port,
                 login=self.user,
                 password=self.password,
-                heartbeat=300,       # ❤️ mismo que el servidor (5 minutos)
-                timeout=30,          # ⏳ subido para dar más margen al handshake
-                retry_interval=30    # 🔁 intenta reconectar cada 30s en caso de caída
+                heartbeat=300,
+                timeout=30,
+                retry_interval=30
             )
 
             self.channel = await self.connection.channel()
@@ -58,16 +57,16 @@ class RabbitMQConsumer(IRabbitMQConsumer):
                 raw_body = message.body.decode()
                 request = ScrapperRequest.fromRaw(raw_body)
 
-                # Crear servicio y correr scrapper
                 service = self.scrapper_service(request)
                 await service.runScrapper()
 
+        except asyncio.CancelledError:
+            self.logger.warning("⚠️ Tarea cancelada mientras procesaba mensaje, reencolando...")
+            await message.nack(requeue=True)
+            raise
         except aio_pika.exceptions.ChannelInvalidStateError:
             self.logger.error("❌ Canal inválido al procesar mensaje. Reencolando...")
-            try:
-                await message.nack(requeue=True)
-            except Exception:
-                self.logger.warning("⚠️ No se pudo hacer NACK, canal ya cerrado.")
+            await message.nack(requeue=True)
         except Exception as e:
             self.logger.error(f"❌ Error procesando mensaje: {e}")
             try:
@@ -83,20 +82,21 @@ class RabbitMQConsumer(IRabbitMQConsumer):
                     await self.connect()
 
                 if self.queue:
-                    await self.queue.consume(self.callback, no_ack=False)
-                    self.logger.info("🎧 Esperando mensajes...")
+                    consumer_tag = await self.queue.consume(self.callback, no_ack=False)
+                    self.logger.info(f"🎧 Esperando mensajes en {self.pub_queue_name}...")
 
-                while not self.connection.is_closed:
-                    await asyncio.sleep(5)
+                    while not self.connection.is_closed:
+                        await asyncio.sleep(5)
+
+                    await self.queue.cancel(consumer_tag)
 
             except asyncio.CancelledError:
-                self.logger.info("👋 Interrupción manual detectada.")
+                self.logger.info("👋 Interrupción manual detectada en consumer.")
                 break
             except Exception as e:
                 self.logger.error(f"⚠️ Error en loop de consumo: {e}. Reintentando en 5s...")
                 await asyncio.sleep(5)
 
-        # cierre limpio
         if self.connection:
             await self.connection.close()
             self.logger.info("🔌 Conexión a RabbitMQ cerrada.")

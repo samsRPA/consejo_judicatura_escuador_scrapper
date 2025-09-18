@@ -12,20 +12,59 @@ class ProcessDataService(IProcessDataService,):
     
     def __init__(self):
         pass
-    
-    def procesar_actuaciones_judiciales(self,data,json_dir,save_file=True):
+
+
+    def filtrar_actuaciones_procesadas(self, data, is_radicado_procesado):
         try:
             # Normalizar todo en un solo DataFrame
             df = pd.json_normalize(data)
 
-        # Convertir fechas (mantener original con hora y extraer solo la fecha DD-MM-YYYY)
+
+
             if "fecha" in df.columns:
-                df["fecha_original"] = pd.to_datetime(df["fecha"], errors='coerce')
+                df["fecha"] = pd.to_datetime(df["fecha"], errors="coerce")
+
+            if is_radicado_procesado and "fecha" in df.columns:
+                # Normalizamos 'hoy' con la misma tz que fecha
+                hoy = pd.Timestamp.now(tz="UTC").normalize()
+                tres_dias_atras = hoy - pd.Timedelta(days=3)
+
+                # Filtro solo registros con fecha válida (no NaT)
+                df = df.dropna(subset=["fecha"])
+                df = df[(df["fecha"] >= tres_dias_atras) & (df["fecha"] <= hoy)]
+
+                self.logger.info(
+                    f" ✅Se filtrarán movimientos desde {tres_dias_atras.date()} hasta {hoy.date()} (últimos 3 días)."
+                )
+
+            filtrados =df.to_dict(orient="records")
+                   
+
+
+            return filtrados
+    
+    
+        except Exception as e:
+            self.logger.error(f"❌ Error inesperado: {e}")
+            return []
+        
+ 
+    def procesar_actuaciones_judiciales(self,data,json_dir,save_file=True):
+        try:
+
+            df = pd.json_normalize(data)
+                
+
+             # Convertir fechas (mantener original con hora y extraer solo la fecha DD-MM-YYYY)
+            
+            if "fecha" in df.columns:
+                df["fecha_original"] = pd.to_datetime(df["fecha"], errors="coerce")
                 df["fecha"] = df["fecha_original"].dt.strftime("%d-%m-%Y")
                 df["hora"] = df["fecha_original"].dt.strftime("%H:%M:%S")   # 👉 nueva columna con solo la hora
-                    # Crear campo FECHA_REGISTRO_TYBA = fecha-hora
+                        # Crear campo FECHA_REGISTRO_TYBA = fecha-hora
                 df["fecha_registro_tyba"] = df["fecha"] + " " + df["hora"]
-    
+                    
+
             # Columnas extra
             df = df.assign(
             
