@@ -29,7 +29,7 @@ class HoyPathsDto(BaseModel):
      
         
         base_jsons= base_output/"jsons"/date_str_slug
-        base_logs = base_output / "logs" / f"{date_str_slug}_descarga_actuaciones.csv"
+        base_logs = base_output / "logs" / f"descarga_actuaciones.csv"
 
     
         for p in [base_jsons]:

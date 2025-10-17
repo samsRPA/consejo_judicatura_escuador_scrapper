@@ -18,6 +18,7 @@ class RadicadosCJService(IRadicadosCJService):
         self.producer = producer
         self.db = db
         self.repository = repository
+        
 
     async def getAllRadicadosCJ(self):
         radicados_service_requests_total.inc()

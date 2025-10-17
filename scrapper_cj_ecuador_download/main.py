@@ -12,9 +12,9 @@ from app.dependencies.Dependencies import Dependencies
 from app.infrastucture.config.Settings import load_config
 
 
-from app.infrastucture.config.LogsConfig import setup_logger, start_logger
 from app.application.dto.HoyPathsDto import HoyPathsDto
  
+
 
   # ============ Configuración de logging ============
 def setup_logger(log_path: Path):
@@ -44,10 +44,8 @@ async def main():
 
     try:
         await db.connect()
-        await asyncio.gather(
-            consumer.startConsuming(),
-            start_logger()
-        )
+        await consumer.startConsuming()
+           
     except Exception as e:
         logger.exception("❌ Error durante la ejecución principal", exc_info=e)
     finally:

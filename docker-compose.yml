@@ -8,8 +8,8 @@ services:
     image: rabbitmq:3.13-management
     container_name: rabbitmq_cj_ecuador
     ports:
-      - "5674:5672"
-      - "15674:15672"
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
@@ -69,7 +69,7 @@ services:
       dockerfile: dockerfile
     container_name: radicado_cj_ecuador
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -110,7 +110,7 @@ services:
         max-size: "20m"
         max-file: "5"
     deploy:
-      replicas: 1
+      replicas: 10
       resources:
         limits:
           memory: 2000m
@@ -163,7 +163,7 @@ services:
     networks:
       - rabbitmq_net_ecuador
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
     environment:
@@ -181,7 +181,7 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus-data:/prometheus
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
@@ -201,7 +201,7 @@ services:
     volumes:
       - /:/host:ro
     ports:
-      - "9100:9100"
+      - "127.0.0.1:9100:9100"
     restart: unless-stopped
 
   cadvisor:
@@ -229,7 +229,7 @@ services:
       - ./loki-config.yml:/mnt/config/loki-config.yml
       - loki-data:/loki
     ports:
-      - "3100:3100"
+      - "127.0.0.1:3100:3100"
     command: 
       - -config.file=/mnt/config/loki-config.yml
     

@@ -46,6 +46,8 @@ async def main():
         
     except Exception as e:
         logger.exception("❌ Error durante la ejecución principal", exc_info=e)
+    finally:
+        db.close_connection()
   
 if __name__ == '__main__':
     try:

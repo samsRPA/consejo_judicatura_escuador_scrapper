@@ -19,13 +19,11 @@ class RadicadosCJRepository:
                         START WITH LOCALIDAD_ID = 239
                 )
             """
-            def _exec_query():
-                with conn.cursor() as cursor:
-                    cursor.execute(query)
-                    # extraemos solo el primer elemento de cada tupla
-                    return [row[0] for row in cursor.fetchall()]
-
-            rows = await asyncio.to_thread(_exec_query)
-            return rows  # ahora es List[str], no List[List[str]]
+            
+            async with conn.cursor() as cursor:
+                await cursor.execute(query)
+                # extraemos solo el primer elemento de cada tupla
+                return [row[0] for row in await cursor.fetchall()]
+         
         except Exception as error:
             raise error

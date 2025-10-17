@@ -27,16 +27,6 @@ class Dependencies(containers.DeclarativeContainer):
         db_service_name=settings.provided.data_base.DB_SERVICE_NAME,
     )
 
-
-
-    # # Provider de Repositories
-    # key_tyba_repository = providers.Factory(
-    #     KeyTybaRepository,
-    #     table_desty=settings.provided.data_base_tables.DB_TABLE_NAME_DESTY,
-    #     table_des=settings.provided.data_base_tables.DB_TABLE_NAME_DES,
-    #     table_lo=settings.provided.data_base_tables.DB_TABLE_NAME_LO,
-    #     table_toaraw=settings.provided.data_base_tables.DB_TABLE_NAME_TOARAW
-    # )
     radicados_cj_repository = providers.Factory(
         RadicadosCJRepository,
         )

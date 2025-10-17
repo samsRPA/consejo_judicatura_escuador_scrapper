@@ -6,7 +6,6 @@ from pydantic import BaseModel
 class HoyPathsDto(BaseModel):
     display: str
     slug: str
-    
     json_dir:Path
     logs_file: Path
     hour: str
@@ -30,7 +29,7 @@ class HoyPathsDto(BaseModel):
         # Subcarpetas dentro de output
 
         base_jsons= base_output/"jsons"/date_str_slug
-        base_logs = base_output / "logs" / f"{date_str_slug}_scrapper_jsons.csv"
+        base_logs = base_output / "logs" / f"scrapper.csv"
 
     
         for p in [base_jsons]:
@@ -40,7 +39,6 @@ class HoyPathsDto(BaseModel):
             display=date_str_display,
             slug=date_str_slug,
             json_dir=base_jsons.resolve(),
-            # revisar_dir=base_revisar.resolve(),
             logs_file=base_logs.resolve(),
             hour=hour,
             minute=minute

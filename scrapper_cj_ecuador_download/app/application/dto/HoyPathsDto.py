@@ -28,7 +28,7 @@ class HoyPathsDto(BaseModel):
 
         # Subcarpetas dentro de output
         base_actuaciones = base_output / "actuaciones" / date_str_slug
-        base_logs = base_output / "logs" / f"{date_str_slug}_descarga_actuaciones.csv"
+        base_logs = base_output / "logs" / f"descarga_actuaciones.csv"
 
     
         for p in [base_actuaciones]:

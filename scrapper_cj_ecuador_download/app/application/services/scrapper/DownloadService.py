@@ -20,12 +20,13 @@ from app.application.dto.HoyPathsDto import HoyPathsDto
 class DownloadService(IDownloadService):
 
 
-    logger = logging.getLogger(__name__)
     
-    def __init__(self, db: IDataBase, repository:RadicadosCJRepository, S3_manager:IS3Manager, ):
+    
+    def __init__(self, db: IDataBase, repository:RadicadosCJRepository, S3_manager:IS3Manager ):
         self.db = db
         self.repository = repository
         self.S3_manager = S3_manager
+        self.logger = logging.getLogger(__name__)
    
         
         
@@ -36,25 +37,11 @@ class DownloadService(IDownloadService):
         Esto se ejecuta en paralelo en varios hilos.
         """
         uuid = fila.uuid
-        #   # Ignorar si el uuid es "NV"
-        # if uuid == "NV":
-        #     logging.info(f"⏭️ Documento ignorado porque el uuid es 'NV' (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}).")
-        #     return None
-
-        
         fecha_valor = fila.fecha
         radicado_valor = fila.radicado
         consecutivo_valor = fila.consecutivo
-        #hora_valor= fila.hora
-        # cod_despacho_rama_valor=fila.cod_despacho_rama
-        # actuacion_rama_valor= fila.actuacion_rama
-        # anotacion_rama_valor=fila.anotacion_rama
-        # origen_datos_valor= fila.origen_datos
         fecha_registro_tyba_valor= fila.fecha_registro_tyba
     
-
-        
-        
         os.makedirs(actuaciones_dir, exist_ok=True)
 
         nombre_archivo = f"{fecha_valor}_{radicado_valor}_{consecutivo_valor}.pdf"
@@ -99,9 +86,7 @@ class DownloadService(IDownloadService):
                 if insertado_s3:
 
                     self.logger.info(f"✅ [{uuid}] PDF descargado, guardado en {ruta_pdf} y registrado en la BD.")
-                    #self.logger.info(f"📂 [{uuid}] Documento insertado en actuacion rama en la BD (radicado={radicado_valor}, fecha={fecha_valor}, consecutivo={consecutivo_valor}). ")
-                    #await self.repository.insertar_actuacion_rama( conn,radicado_valor, cod_despacho_rama_valor, fecha_valor, actuacion_rama_valor, anotacion_rama_valor, origen_datos_valor,fecha_registro_tyba_valor)
-
+        
                 
                 return ruta_pdf
             else:
@@ -114,6 +99,10 @@ class DownloadService(IDownloadService):
         except Exception as e:
             self.logger.exception(f"❌ [{uuid}] Error inesperado procesando el documento: {str(e)}")
             return None
+        finally:
+            if conn:
+                await self.db.release_connection(conn)
+
        
 
     def upload_file_s3(self,ruta_pdf):
@@ -157,19 +146,3 @@ class DownloadService(IDownloadService):
        
 
     
-    
-    # def download_documents_simultaneously(self,actuaciones,actuaciones_dir, max_workers=5):
-    #     """
-    #     Descarga PDFs en paralelo usando ThreadPoolExecutor.
-    #     """
-    #     rutas_descargadas = []
-
-    #     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-    #         futures = {executor.submit(self.download_documents, fila,actuaciones_dir): fila for fila in actuaciones}
-
-    #         for future in concurrent.futures.as_completed(futures):
-    #             result = future.result()
-    #             if result:
-    #                 rutas_descargadas.append(result)
-
-    #     return rutas_descargadas

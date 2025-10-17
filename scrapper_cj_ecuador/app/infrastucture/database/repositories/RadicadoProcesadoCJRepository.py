@@ -4,10 +4,10 @@ import logging
 
 class RadicadoProcesadoCJRepository:
     
-    logger = logging.getLogger(__name__)
+    
     
     def __init__(self):
-        pass
+        self.logger = logging.getLogger(__name__)
     
         
     async def radicacion_procesada(self, conn, radicacion: str) -> bool:
@@ -23,12 +23,13 @@ class RadicadoProcesadoCJRepository:
                 FETCH FIRST 1 ROWS ONLY
             """
 
-            def _execute():
-                with conn.cursor() as cursor:
-                    cursor.execute(query, {"radicacion": radicacion})
-                    return cursor.fetchone()
+            async def _execute():
+                async with conn.cursor() as cursor:
+                    await cursor.execute(query, {"radicacion": radicacion})
+                    rows= await cursor.fetchone()
+                    return rows
 
-            result = await asyncio.to_thread(_execute)
+            result = await _execute()
 
             if result:
                 self.logger.info(f"✅ Radicado {radicacion} ya procesado")

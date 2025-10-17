@@ -45,6 +45,7 @@ class CargaMasivaCJRepository:
                 return True
 
         except Exception as error:
+            conn.rollback()
             logging.error(f"❌ Error inesperado: {error}")
             return False
             
