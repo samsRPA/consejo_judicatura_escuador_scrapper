@@ -27,7 +27,7 @@ class ProcessDataService(IProcessDataService,):
             if is_radicado_procesado and "fecha" in df.columns:
                 # Normalizamos 'hoy' con la misma tz que fecha
                 hoy = pd.Timestamp.now(tz="UTC").normalize()
-                tres_dias_atras = hoy - pd.Timedelta(days=3)
+                tres_dias_atras = hoy - pd.Timedelta(days=6)
 
                 # Filtro solo registros con fecha válida (no NaT)
                 df = df.dropna(subset=["fecha"])

@@ -76,7 +76,7 @@ class BulkUploadService(IBulkUploadService):
                 if insertado:
                     self.logger.info(f"✅ Insert masivo exitoso para {tipo}")
                     try:
-                        #os.remove(file_path)
+                        os.remove(file_path)
                         self.logger.info(f"🗑️ Archivo eliminado: {file_path}")
                     except Exception as delete_err:
                         self.logger.warning(f"⚠️ No se pudo eliminar el archivo {file_path}: {delete_err}")
