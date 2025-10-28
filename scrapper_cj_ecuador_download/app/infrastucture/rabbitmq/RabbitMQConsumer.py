@@ -36,57 +36,77 @@ class RabbitMQConsumer(IRabbitMQConsumer):
                 port=self.port,
                 login=self.user,
                 password=self.password,
-                timeout=30
-       
-            )
+                timeout=10,               # Tiempo máximo de conexión
+                heartbeat=120,             # Heartbeat cada 60s (debe ser >= al del broker)
 
+            )
             self.channel = await self.connection.channel()
+
             await self.channel.set_qos(prefetch_count=self.prefetch_count)
-
             self.queue = await self.channel.declare_queue(
-                self.pub_queue_name,
-                durable=True
+                self.pub_queue_name, durable=True
             )
-
             self.logger.info("✅ Conectado a RabbitMQ - Consumer")
+
 
         except Exception as error:
             self.logger.error(f"❌ Error conectando al consumer: {error}")
             raise error
 
+    async def reconnect(self):
+        try:
+            if self.connection:
+                await self.connection.close()
+            self.logger.info("🔁 Reintentando conexión con RabbitMQ...")
+            await asyncio.sleep(5)
+            await self.connect()
+            await self.queue.consume(self.callback)
+            self.logger.info("✅ Reconexion exitosa.")
+        except Exception as e:
+            self.logger.error(f"❌ Fallo al reconectar: {e}")
+
     async def callback(self, message: aio_pika.IncomingMessage):
         try:
             async with message.process(ignore_processed=True):
-                raw_body = message.body.decode()
-                request = AutosRequestDto.fromRaw(raw_body)
+                try:
+                    raw_body = message.body.decode()
+                    request = AutosRequestDto.fromRaw(raw_body)
 
                 
                 
                 # Crear servicio y correr scrapper
-                service: IDownloadService = self.download_service
-                await service.run_download(request)
-
-        except Exception as e:
-                    logging.error(f"❌ Error procesando mensaje: {e}")
+                    service: IDownloadService = self.download_service
+                    await service.run_download(request)
+                except asyncio.CancelledError:
+                    self.logger.warning("⚠️ Tarea cancelada mientras procesaba el mensaje.")
+                    raise  # vuelve a lanzar para que asyncio lo maneje
+                except Exception as e:
+                    self.logger.error(f"❌ Error procesando mensaje: {e}")
                     try:
                         await message.nack(requeue=False)
-                    except aio_pika.exceptions.MessageProcessError:
-                        logging.warning("⚠️ Intento de NACK en un mensaje ya procesado.")
+                    except Exception as nack_err:
+                        self.logger.warning(f"⚠️ Error haciendo NACK: {nack_err}")
+        except aio_pika.exceptions.ChannelInvalidStateError:
+            self.logger.error("❌ Canal inválido al procesar el mensaje. Reconectando...")
+            await self.reconnect()
+            
 
     async def startConsuming(self):
         if not self.channel or not self.queue:
-            logging.info("📡 Conexión no establecida. Conectando...")
+            self.logger.info("📡 Conexión no establecida. Conectando...")
             await self.connect()
 
+            
+    
         await self.queue.consume(self.callback)
-        logging.info("🎧 Esperando mensajes...")
+        self.logger.info("🎧 Esperando mensajes...")
 
         try:
             while True:
                 await asyncio.sleep(1)
         except asyncio.CancelledError:
-            logging.info("👋 Interrupción manual detectada.")
+            self.logger.warning("👋 Interrupción manual detectada.")
         finally:
             if self.connection:
                 await self.connection.close()
-                logging.info("🔌 Conexión a RabbitMQ cerrada.")
+                self.logger.info("🔌 Conexión a RabbitMQ cerrada.")
