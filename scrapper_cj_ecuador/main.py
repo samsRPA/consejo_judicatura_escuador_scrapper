@@ -41,6 +41,7 @@ async def main():
     consumer = dependency.rabbitmq_consumer()
     db = dependency.data_base()
     producer = dependency.rabbitmq_producer()
+    #scrapper= dependency.scrapper_service()
 
 
 
@@ -50,6 +51,7 @@ async def main():
     try:
         await db.connect()
         await producer.connect()
+        #await scrapper.runScrapper()
         await consumer.startConsuming()
           
     except Exception as e:

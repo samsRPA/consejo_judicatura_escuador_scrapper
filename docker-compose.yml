@@ -13,7 +13,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
-      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 7200000 -rabbit heartbeat 300"
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 1800000 -rabbit heartbeat 30"
     networks:
       - rabbitmq_net_ecuador
     healthcheck:
@@ -75,6 +75,8 @@ services:
         condition: service_healthy
     networks:
       - rabbitmq_net_ecuador
+    volumes:
+      - ./output:/app/output
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/metrics"]
       interval: 2m
@@ -134,7 +136,7 @@ services:
         max-size: "20m"
         max-file: "5"
     deploy:
-      replicas: 20
+      replicas: 10
       resources:
         limits:
           memory: 1000m

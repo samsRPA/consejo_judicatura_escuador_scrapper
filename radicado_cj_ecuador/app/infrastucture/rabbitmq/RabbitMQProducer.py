@@ -6,9 +6,7 @@ from app.domain.interfaces.IRabbitMQProducer import IRabbitMQProducer
 
 
 class RabbitMQProducer(IRabbitMQProducer):
-    
-    logger= logging.getLogger(__name__)
-    
+
     def __init__(self, host, port, pub_queue_name, user, password):
         self.host = host
         self.port = port
@@ -17,6 +15,7 @@ class RabbitMQProducer(IRabbitMQProducer):
         self.password = password
         self.connection = None
         self.channel = None
+        self.logger = logging.getLogger(__name__)
 
     async def connect(self) -> None:
         try:
@@ -54,3 +53,4 @@ class RabbitMQProducer(IRabbitMQProducer):
         if self.connection:
             await self.connection.close()
             self.logger.info("🔌 Conexión con RabbitMQ cerrada")
+

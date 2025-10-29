@@ -15,6 +15,8 @@ from app.domain.interfaces.IActuacionesPublishService import IActuacionesPublish
 from app.domain.interfaces.IDataBase import IDataBase
 from app.infrastucture.database.OracleDB import OracleDB
 from app.infrastucture.database.repositories.RadicadoProcesadoCJRepository import RadicadoProcesadoCJRepository
+from app.domain.interfaces.ICJEcuadorScrapper import ICJEcuadorScrapper
+from app.application.services.scrapper.CJEcuadorScrapper import CJEcuadorScrapper
 
 
 
@@ -61,13 +63,19 @@ class Dependencies(containers.DeclarativeContainer):
         producer=rabbitmq_producer
     )
 
-    scrapper_service: providers.Factory[IScrapperService] = providers.Factory(
-        ScrapperService,
+    cj_ecuador_scrapper: providers.Factory[ICJEcuadorScrapper] = providers.Factory(
+        CJEcuadorScrapper,
         data_base,
         radicado_procesado_cj_repository,
         get_data_service,
         process_data_service,
         actuaciones_publish_service
+    )
+
+    scrapper_service: providers.Factory[IScrapperService] = providers.Factory(
+        ScrapperService,
+        cj_ecuador_scrapper =cj_ecuador_scrapper
+    
     )
 
 
